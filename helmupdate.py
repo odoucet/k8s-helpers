@@ -37,7 +37,7 @@ def update_helmfile(helmfile_path):
             if latest_version and current_version != latest_version:
                 datetime_object = datetime.datetime.fromtimestamp(packageInfo['ts'])
                 release = CommentedMap(release)
-                release.yaml_set_comment_before_after_key("version", before=f"Latest version: {latest_version} - released on {datetime_object.strftime('%Y-%m-%d')}")
+                release.yaml_set_comment_before_after_key("version", before=f"Latest version: {latest_version} - released on {datetime_object.strftime('%Y-%m-%d')}", indent=2)
         updated_releases.append(release)
 
     updated_helmfile = {
@@ -48,7 +48,7 @@ def update_helmfile(helmfile_path):
 
     updated_helmfile = CommentedMap(updated_helmfile)
     datetime_object = datetime.datetime.now()
-    updated_helmfile.yaml_set_comment_before_after_key("releases", before=f"Last version scan: {datetime_object.strftime('%Y-%m-%d')}")
+    updated_helmfile.yaml_add_eol_comment(f"Last version scan: {datetime_object.strftime('%Y-%m-%d')}", key="releases", column=0)
 
     with open(helmfile_path, "w") as f:
         yaml.dump(updated_helmfile, f)
