@@ -26,7 +26,8 @@ def update_helmfile(helmfile_path):
 
     for release in helmfile.get("releases", []):
         chart = release.get("chart")
-        if chart:
+        # if chart is defined and does not start with "oci:"
+        if chart and not chart.startswith("oci:"):
             current_version = release.get("version")
             packageInfo = get_package_info(chart)
             if packageInfo:
