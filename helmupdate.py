@@ -3,6 +3,7 @@ import argparse
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedMap
 import datetime
+import re
 
 ARTIFACTHUB_API_URL = "https://artifacthub.io/api/v1/packages/helm/{}"
 
@@ -31,7 +32,20 @@ def update_helmfile(helmfile_path):
             current_version = release.get("version")
             packageInfo = get_package_info(chart)
             if packageInfo:
-                latest_version = packageInfo["version"]
+                # extract latest_version: loop over release.get('available_versions') and
+                # find the latest 'ts' that does not contain strings '-pre', '-beta', '-rc'
+                latest_version = None
+                if packageInfo["available_versions"]:
+                    for version in packageInfo["available_versions"]:
+                        if version['prerelease']:
+                            continue
+
+                        # check if version['version'] string contains '-pre', '-beta', '-rc'
+                        if not any(x in version['version'] for x in ['-pre', '-beta', '-rc']) and (not latest_version or compare_versions(version['version'], latest_version) == 1):
+                            latest_version = version['version']
+                else:
+                    # fallback
+                    latest_version = packageInfo["version"]
             else:
                 latest_version = None
 
@@ -63,6 +77,35 @@ def main():
     update_helmfile(helmfile_path)
 
     print("Helmfile updated successfully.")
+
+def version_to_tuple(version: str) -> tuple:
+    """
+    Convertit une chaîne de numéro de version en un tuple d'entiers.
+    Les parties non numériques sont ignorées.
+    Par exemple: '1.12.4-alpha' devient (1, 12, 4).
+    """
+    # Extraction des segments numériques à l'aide d'une expression régulière
+    version_numbers = re.findall(r'\d+', version)
+    return tuple(map(int, version_numbers))
+
+def compare_versions(version1: str, version2: str) -> int:
+    """
+    Compare deux numéros de versions. 
+    Retourne:
+    - 1 si version1 > version2
+    - 0 si version1 == version2
+    - -1 si version1 < version2
+    """
+    v1_tuple = version_to_tuple(version1)
+    v2_tuple = version_to_tuple(version2)
+
+    # Comparaison des tuples
+    if v1_tuple > v2_tuple:
+        return 1
+    elif v1_tuple < v2_tuple:
+        return -1
+    else:
+        return 0
 
 if __name__ == "__main__":
     main()
