@@ -12,8 +12,17 @@ def get_latest_version(chart):
     url = ARTIFACTHUB_API_URL.format(chart)
     response = requests.get(url)
     if response.status_code == 200:
-        data = response.json()
-        return data["version"]
+        # try catch
+        try:
+            data = response.json()
+            return data["version"]
+        finally:
+            # print error with response content
+            print("JSON decode error while parsing response for chart: {}".format(chart))
+            print(response.content)
+
+            return None
+        
     return None
 
 def parse_helmfile(helmfile_path):
