@@ -21,10 +21,13 @@ def parse_helmfile(helmfile_path):
         helmfile = yaml.safe_load(file)
         releases = {}
         for release in helmfile.get('releases', []):
-            name = release.get('chart')
-            version = release.get('version')
-            if name and version:
-                releases[name] = version
+            chart = release.get("chart")
+            # if chart is defined and does not start with "oci:"
+            if chart and not chart.startswith("oci:"):
+                name = release.get('chart')
+                version = release.get('version')
+                if name and version:
+                    releases[name] = version
         return releases
 
 def compare_helmfiles(helmfile_paths):
@@ -59,3 +62,4 @@ for release in sorted(set(release for releases in all_releases.values() for rele
 # Generate and print the table
 table = tabulate(rows, headers=header, tablefmt='github')
 print(table)
+# Close table
