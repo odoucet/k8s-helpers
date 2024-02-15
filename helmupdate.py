@@ -4,15 +4,12 @@ import ruamel.yaml
 from ruamel.yaml.comments import CommentedMap
 import datetime
 import re
+import subprocess
 
-ARTIFACTHUB_API_URL = "https://artifacthub.io/api/v1/packages/helm/{}"
-
-def get_package_info(chart):
-    url = ARTIFACTHUB_API_URL.format(chart)
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    return None
+def get_helm_version(chart):
+    # helm search repo cilium/cilium -o yaml
+    info = ruamel.yaml.YAML().load(subprocess.run(["helm", "search", "repo", chart, "-o", "yaml"], stdout=subprocess.PIPE).stdout)
+    return info[0].get('version')
 
 def update_helmfile(helmfile_path):
     yaml = ruamel.yaml.YAML()
@@ -30,31 +27,14 @@ def update_helmfile(helmfile_path):
         # if chart is defined and does not start with "oci:"
         if chart and not chart.startswith("oci:"):
             current_version = release.get("version")
-            packageInfo = get_package_info(chart)
-            if packageInfo:
-                # extract latest_version: loop over release.get('available_versions') and
-                # find the latest 'ts' that does not contain strings '-pre', '-beta', '-rc'
-                latest_version = None
-                latest_ts = None
-                if packageInfo["available_versions"]:
-                    for version in packageInfo["available_versions"]:
-                        if version['prerelease']:
-                            continue
-
-                        # check if version['version'] string contains '-pre', '-beta', '-rc'
-                        if not any(x in version['version'] for x in ['-pre', '-beta', '-rc']) and (not latest_version or compare_versions(version['version'], latest_version) == 1):
-                            latest_version = version['version']
-                            latest_ts = version['ts']
-                else:
-                    # fallback
-                    latest_version = packageInfo["version"]
-            else:
+            latest_version = get_helm_version(chart)
+            if not latest_version:
                 latest_version = None
 
             if latest_version and current_version != latest_version:
-                datetime_object = datetime.datetime.fromtimestamp(latest_ts)
+                #datetime_object = datetime.datetime.fromtimestamp(latest_ts)
                 release = CommentedMap(release)
-                release.yaml_set_comment_before_after_key("version", before=f"Latest version: {latest_version} - released on {datetime_object.strftime('%Y-%m-%d')}", indent=2)
+                release.yaml_set_comment_before_after_key("version", before=f"Latest version: {latest_version}", indent=2) # - released on {datetime_object.strftime('%Y-%m-%d')}", indent=2)
                 print("Updating {:50} from {:>8} to {:>8}".format(chart, current_version, latest_version))
         updated_releases.append(release)
 
