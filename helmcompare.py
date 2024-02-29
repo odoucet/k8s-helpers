@@ -46,6 +46,8 @@ def compare_helmfiles(helmfile_paths):
             releases = parse_helmfile(path)
             # replace 'oci://ghcr.io/actions/' in keys:
             releases = {k.replace('oci://ghcr.io/actions/', ''): v for k, v in releases.items()}
+            releases = {k.replace('oci://registry-1.docker.io/', ''): v for k, v in releases.items()}
+            
             all_releases[path.split('/')[0]] = releases
     return all_releases
 
