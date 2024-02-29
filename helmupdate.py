@@ -9,7 +9,10 @@ import subprocess
 def get_helm_version(chart):
     # helm search repo cilium/cilium -o yaml
     info = ruamel.yaml.YAML().load(subprocess.run(["helm", "search", "repo", chart, "-o", "yaml"], stdout=subprocess.PIPE).stdout)
-    return info[0].get('version')
+    if info and info[0]:
+        return info[0].get('version')
+    else:
+        return None
 
 def update_helmfile(helmfile_path):
     yaml = ruamel.yaml.YAML()
@@ -24,8 +27,7 @@ def update_helmfile(helmfile_path):
 
     for release in helmfile.get("releases", []):
         chart = release.get("chart")
-        # if chart is defined and does not start with "oci:"
-        if chart and not chart.startswith("oci:"):
+        if chart:
             current_version = release.get("version")
             latest_version = get_helm_version(chart)
             if not latest_version:
