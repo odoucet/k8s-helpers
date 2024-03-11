@@ -5,7 +5,11 @@ Some scripts to help with k8s development
 * helmupdate.py: Python script to update helm charts in a directory
 * helmcompare.py: compare */system/helmfile.yaml all together
 
-
 Updates
 ------
 *2024-02-15* now, helmupdate.py uses "helm repo search" to find the latest version of a chart (instead of artifacthub.io API, that was not always reliable)
+
+DEPRECATION NOTICE
+------------------
+Sorry, script helmcompare.py wont be updated anymore, because a new version has been developed since in closed source.
+Any merge request are welcomed.
